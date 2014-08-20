@@ -27,7 +27,7 @@ function dedupe(node, ancestors) {
   }
 
   mods.forEach(function (dep) {
-    dedupe(dep, ancestors.concat(node))
+    if (!dep.linked) dedupe(dep, ancestors.concat(node))
   })
 }
 
@@ -37,12 +37,13 @@ function parse(pathname) {
   var name = pkg.name
   var major = semver.parse(pkg.version).major
   var modules = []
-  if (fs.existsSync(node_modules) && !fs.lstatSync(node_modules).isSymbolicLink()) {
+  if (fs.existsSync(node_modules)) {
     modules = fs.readdirSync(node_modules).filter(dots).map(function (name) {
       return parse(path.join(node_modules, name))
-    })
+    }).filter(Boolean)
   }
   return {
+    linked: fs.lstatSync(pathname).isSymbolicLink(),
     pathname: pathname,
     modules: modules,
     name: name,
