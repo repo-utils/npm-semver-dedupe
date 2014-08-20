@@ -1,0 +1,56 @@
+#!/usr/bin/env node
+
+var fs = require('fs')
+var path = require('path')
+var semver = require('semver')
+var rimraf = require('rimraf')
+
+dedupe(parse(process.cwd()), [])
+
+function dedupe(node, ancestors) {
+  var mods = node.modules
+  top:
+  for (var i = 0; i < mods.length; i++) {
+    var mod = mods[i]
+    if (mod.major === 0) continue
+    for (var j = 0; j < ancestors.length; j++) {
+      if (ancestors[j].modules.some(function (x) {
+        return x.name === mod.name
+          && x.version === mod.version
+      })) {
+        console.log('deleting "%s"', mod.pathname)
+        rimraf.sync(mod.pathname)
+        mods.splice(i--, 1)
+        continue top
+      }
+    }
+  }
+
+  mods.forEach(function (dep) {
+    dedupe(dep, ancestors.concat(node))
+  })
+}
+
+function parse(pathname) {
+  var node_modules = path.join(pathname, 'node_modules')
+  var pkg = require(path.join(pathname, 'package.json'))
+  var name = pkg.name
+  var major = semver.parse(pkg.version).major
+  var modules = []
+  if (fs.existsSync(node_modules) && !fs.lstatSync(node_modules).isSymbolicLink()) {
+    modules = fs.readdirSync(node_modules).filter(dots).map(function (name) {
+      return parse(path.join(node_modules, name))
+    })
+  }
+  return {
+    pathname: pathname,
+    modules: modules,
+    name: name,
+    major: major,
+  }
+}
+
+function dots(x) {
+  if (x[0] === '.') return false
+  return true
+}
