@@ -12,11 +12,15 @@ function dedupe(node, ancestors) {
   top:
   for (var i = 0; i < mods.length; i++) {
     var mod = mods[i]
-    if (mod.major === 0) continue
     for (var j = 0; j < ancestors.length; j++) {
       if (ancestors[j].modules.some(function (x) {
-        return x.name === mod.name
-          && x.version === mod.version
+        if (x.name !== mod.name) return false
+        if (mod.major === 0) {
+          // to do: option to compare majors or minors
+          return mod.version === x.version
+        } else {
+          return mod.major === x.major
+        }
       })) {
         console.log('deleting "%s"', mod.pathname)
         rimraf.sync(mod.pathname)
@@ -35,7 +39,7 @@ function parse(pathname) {
   var node_modules = path.join(pathname, 'node_modules')
   var pkg = require(path.join(pathname, 'package.json'))
   var name = pkg.name
-  var major = semver.parse(pkg.version).major
+  var version = semver.parse(pkg.version)
   var modules = []
   if (fs.existsSync(node_modules)) {
     modules = fs.readdirSync(node_modules).filter(dots).map(function (name) {
@@ -47,7 +51,10 @@ function parse(pathname) {
     pathname: pathname,
     modules: modules,
     name: name,
-    major: major,
+    version: [version.major, version.minor, version.patch].join('.'),
+    major: version.major,
+    minor: version.minor,
+    patch: version.patch,
   }
 }
 
