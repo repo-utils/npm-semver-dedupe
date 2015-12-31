@@ -12,7 +12,7 @@
   "repository": "repo-utils/npm-semver-dedupe",
   "dependencies": {
     "debug": "*",
-    "semver": "3",
+    "semver": "5.1.0",
     "rimraf": "2"
   },
   "keywords": [
