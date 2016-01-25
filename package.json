@@ -13,7 +13,7 @@
   "dependencies": {
     "debug": "*",
     "semver": "3",
-    "rimraf": "2"
+    "rimraf": "2.5.1"
   },
   "keywords": [
     "npm",
